@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% block body %}
+<div class="container">
+    <div class="row">
+        <div class="row text-center h1">
+            下载&&上传
+        </div>
+        <div class="col-md-6">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>文件名</th>
+                        <th>大小</th>
+                        <th>下载</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </div>
+        <div class="col-md-6">
+            <form action="{% url 'main:up' %}" method="POST" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label>File</label>
+                    <input type="file" name="file">
+                    <p class="help-block" id="tip"></p>
+                </div>
+                <button type="submit" class="btn btn-default" id="submit">Submit</button>
+            </form>
+        </div>
+    </div>
+</div>
+<!-- <script>
+    $('#submit').click(
+        function() {
+            $.ajax({
+                type: 'post',
+                dataType: 'json',
+                cache: false,
+                url: "{% url 'main:up' %}",
+                processData: false,
+                contentType: false,
+                success: function(e) {
+                    $("tip").val(e.data)
+                }
+            })
+        }
+    )
+</script> -->
+{% endblock body %}
