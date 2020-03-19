@@ -8,4 +8,5 @@ urlpatterns = [
     path('up/', views.up, name="up"),
     path('', views.index, name="index"),
     path('test/', views.test, name="test"),
+    path('delete/<int:pk>/', views.remove, name="remove")
 ]
