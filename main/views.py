@@ -1,10 +1,12 @@
 from django.shortcuts import render
 from main.models import File
 from django.http import JsonResponse, StreamingHttpResponse
+from django.utils.http import urlquote
 from django.core.serializers import serialize
 import json
 import os
 from django.db import models
+import time
 
 # Create your views here.
 
@@ -30,37 +32,46 @@ def test(request):
 
 
 def down(request, pk):
+    try:
         model = File.objects.get(pk=pk)
-        path = model.path
-        file_name = model.name
-        def down_iterator(path, chunk_size=1024):
-            with open(path, 'rb') as f:
-                while True:
-                    e = f.read(chunk_size)
-                    if e:
-                        yield e
-                    else:
-                        break
-        
+    except models.ObjectDoesNotExist:
+        return JsonResponse({"data": "File has been deleted!"})
+    path = model.path
+    file_name = model.name
+    def down_iterator(path, chunk_size=1024):
+        with open(path, 'rb') as f:
+            while True:
+                e = f.read(chunk_size)
+                if e:
+                    yield e
+                else:
+                    break
+    try:
         response = StreamingHttpResponse(down_iterator(path))
-        response['Content-Type'] = 'application/octet-stream'
-        response['Content-Disposition'] = 'attachment;filename="{0}"'.format(file_name)
-
-        return response
+    except:
+        return JsonResponse({"data": "error"})
+    
+    response['Content-Type'] = 'application/octet-stream'
+    response['Content-Disposition'] = 'attachment;filename="{0}"'.format(urlquote(file_name))
+    return response
 
 def up(request):
     myfile = request.FILES.get("file", None)
     if not myfile:
         return JsonResponse({"data": "No file!"})
-    print(myfile.name)
-    print(myfile.size)
 
-    path = 'storage/' + myfile.name
-    with open(path, 'wb') as f:
-        for chunk in myfile.chunks():
-            f.write(chunk)
-    
-    File.objects.create(name=myfile.name, size=myfile.size, path=path)
+    timestamp = str(time.time())
+    name = myfile.name
+    size = myfile.size / 1024 / 1024
+    path = 'storage/' + myfile.name + '.' + timestamp
+    try:
+        with open(path, 'wb') as f:
+            for chunk in myfile.chunks():
+                f.write(chunk)
+
+        File.objects.create(name=myfile.name, size=size, path=path, timestamp=timestamp)
+    except:
+        return JsonResponse({"data": "error!"})
 
     return JsonResponse({"data": "good!"})
 
@@ -70,7 +81,7 @@ def remove(request, pk):
         f = File.objects.get(pk=pk)
     except models.ObjectDoesNotExist:
         return JsonResponse({"data": "already delete!"})
-    print(f.name)
+
     f.delete()
     path = f.path
     if os.path.exists(path):

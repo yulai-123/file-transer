@@ -13,40 +13,118 @@
                         <th>文件名</th>
                         <th>大小</th>
                         <th>下载</th>
+                        <th>删除</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="list">
                 </tbody>
             </table>
+            <p class="help-block" id="info"></p>
+            <button type="submit" class="btn btn-default" id="refresh">刷新</button>
         </div>
         <div class="col-md-6">
-            <form action="{% url 'main:up' %}" method="POST" enctype="multipart/form-data">
-                {% csrf_token %}
-                <div class="form-group">
-                    <label>File</label>
-                    <input type="file" name="file">
-                    <p class="help-block" id="tip"></p>
-                </div>
-                <button type="submit" class="btn btn-default" id="submit">Submit</button>
-            </form>
+            {% csrf_token %}
+            <div class="form-group">
+                <label>File</label>
+                <input type="file" name="file" id="file">
+                <p class="help-block" id="tip"></p>
+            </div>
+            <button type="submit" class="btn btn-default" id="up">提交</button>
         </div>
     </div>
 </div>
-<!-- <script>
-    $('#submit').click(
+<script>
+        var del = function(pk) {
+            csrf = $("input[name='csrfmiddlewaretoken']").val()
+            $.ajax({
+                type: "post",
+                dataType: "json",
+                url: "delete/" + pk + "/",
+                data: {
+                    csrfmiddlewaretoken: csrf
+                },
+                success: function(res) {
+                    $("#info").text(res.data)
+                    getList()
+                }
+            })
+        }
+    var getList = function() {
+        $.ajax({
+            type: "get",
+            url: "{% url 'main:list' %}",
+            dataType: "json",
+
+            success: function(res) {
+                var list = $("#list")
+                list.html("")
+                var instances = res.instances
+                for(var i = 0; i < instances.length; i++) {
+                    var instance = instances[i]
+                    var pk = instance.pk
+                    var name = instance.fields.name
+                    var size = instance.fields.size
+                    var h = "<tr>"  
+                        + "<th>" + pk + "</th>"
+                        + "<td>" + name + "</td>"
+                        + "<td>" + size + "</td>"
+                        + '<td><a href="down/' + pk+'/" class="btn btn-primary downBtn" value="' + pk + '">下载</button></td>'
+                        + '<td><button type="submit" class="btn btn-danger deleteBtn" value="' + pk + '">删除</button></td>'
+                        + "</tr>"
+                        
+                    list.append(h)
+                }
+                var delBtnList = $('.deleteBtn')
+                for(var i = 0; i < delBtnList.length; i++) {
+                    delBtnList[i].onclick = function() {
+                        pk = this.getAttribute("value")
+                        del(pk)
+                    }
+                }
+            }
+        })
+    }
+
+
+
+    $('#up').click(
         function() {
+            var csrf = $("input[name='csrfmiddlewaretoken']").val()
+            var formdata = new FormData()
+            file = $("#file")[0].files[0]
+            console.log(file)
+            formdata.append("csrfmiddlewaretoken", csrf)
+            formdata.append("file", file)
+
             $.ajax({
                 type: 'post',
-                dataType: 'json',
-                cache: false,
+                dataType: "json",
                 url: "{% url 'main:up' %}",
+                data: formdata,
                 processData: false,
                 contentType: false,
-                success: function(e) {
-                    $("tip").val(e.data)
+                cache: false,
+                beforeSend: function() {
+                    $("#tip").text("uploading!")
+                },
+                success: function(res) {
+                    $("#tip").text(res.data)
+                    getList()
+                },
+                error: function(res) {
+                    console.log(res.data)
+                    $("#tip").text(res.data)
                 }
             })
         }
     )
-</script> -->
+    
+    $("#refresh").click(
+        function() {
+            $("#info").text("")
+            getList()
+        }
+    )
+    getList()
+</script>
 {% endblock body %}
